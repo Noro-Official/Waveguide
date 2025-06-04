@@ -1,64 +1,89 @@
-Waveguide 3.0 | Cypress‑Mini
+# Waveguide 3.0 | Cypress-Mini
+
+[![CI](https://img.shields.io/github/actions/workflow/status/<USER>/waveguide3.0/ci.yml?label=CI&logo=github&style=flat-square)](../../actions)
+[![Docs](https://img.shields.io/badge/docs-latest-brightgreen?style=flat-square&logo=read-the-docs)](https://<USER>.github.io/waveguide3.0/)
+[![License](https://img.shields.io/github/license/<USER>/waveguide3.0?style=flat-square)](LICENSE)
+[![DOI](https://zenodo.org/badge/<ZENODO_BADGE_ID>.svg)](https://doi.org/<DOI_LINK>)
+
+*A topological “seismic-cloak” lattice for superconducting qubits, integrating concentric impedance-graded rings, cat-biased error drains, and a dual photonic-phononic exoskeleton—auto-tuned in-fridge by the **Q-CAT** RL agent.*
+
+---
+
+## Key Features
+
+| Layer | Purpose | Status |
+|-------|---------|--------|
+| **Impedance-graded CPW rings** | Radially bias error propagation (wave-guide effect) | ✅ Design v1, Stim-verified |
+| **Cat-coded drains** | Exponential suppression of bit-flips at sinks | ✅ Single-cavity demo |
+| **Dual photonic & phononic shell** | Attenuate microwave + phonon loss (κ̃ ↓) | 🛠️ Coupon in fab |
+| **Q-CAT optimiser** | RL + BO loop maximising Liouvillian gap | 🛠️ Simulator complete |
+| **Noise-library JSON** | Markovian, 1/f, QP bursts, non-Markovian kernels | 🛠️ A/B/C models merged |
+
+---
+
+## Repository Layout
+
+waveguide3.0/
+├── src/ # Python packages (analytics, Stim, QuTiP, Q-CAT)
+│ └── init.py
+├── notebooks/ # Jupyter demos (reproduce figures with one click)
+├── tests/ # Pytest unit tests (CI-gated)
+├── docs/ # Sphinx site + LaTeX manual (auto-built)
+│ ├── conf.py
+│ └── Waveguide_manual.tex
+├── data/ # Git-LFS tracked raw & processed datasets
+│ ├── raw/
+│ └── processed/
+├── hardware/ # GDS, COMSOL, S-parameter files (place-holders)
+├── .github/workflows/ # CI: lint → pytest → build manual → publish docs
+├── environment.yml # Conda environment spec
+├── AGENTS.md # Copilot/Codex agent instructions
+├── CITATION.cff # Citation metadata (exported to Zenodo DOI)
+├── LICENSE # MIT License
+└── README.md
 
 
+---
 
+## Quick Start
 
+```bash
+# 1. Clone + create environment
+git clone https://github.com/<USER>/waveguide3.0.git
+cd waveguide3.0
+conda env create -f environment.yml
+conda activate waveguide3
 
-Topological “Seismic” Cloaking for Qubits — a concentric, impedance‑graded, cat‑biased error‑drain lattice that passively shepherds bit‑ and phase‑flip error waves away from a nine‑qubit logical patch, achieving an analytically verified Liouvillian gap of 4 kHz and a projected logical error rate below 10⁻¹² at physical error probability 10⁻³.
+# 2. Run unit tests
+pytest -q
 
-Waveguide 3.0 couples four layers of protection—multi‑ring impedance ladders, cat‑coded drains, dual photonic–phononic band‑gap shells, and a cryo‑in‑the‑loop Q‑CAT Bayesian‑RL optimiser—to deliver hardware‑efficient fault tolerance on near‑term superconducting processors. This repo is the living lab notebook: every equation, simulation, mask file, and fridge log needed to reproduce the results is tracked here or in linked sub‑modules.
+# 3. Reproduce main figure (Liouvillian spectrum)
+jupyter notebook notebooks/liouvillian_gap_demo.ipynb
+Tip: The LaTeX design manual (docs/Waveguide_manual.tex) builds automatically in CI; the latest PDF lives under the Docs badge above.
+Contributing
 
-## Quick start
+Pull requests are welcome! Please open an issue first to discuss substantial changes.
+All code is auto-linted and unit-tested in GitHub Actions—merge only if CI is green.
 
-# Clone + create conda environment
-$ git clone https://github.com/USER/waveguide3.0.git
-$ cd waveguide3.0
-$ conda env create -f environment.yml
-$ conda activate waveguide3.0
+License
 
-# Run a Liouvillian‑gap demo (Stim + QuTiP‑GPU)
-$ python notebooks/liouvillian_demo.py
+This project is licensed under the MIT License (see LICENSE).
+Mask‐layout and COMSOL files remain © Waveguide Project until first tape-out; non-commercial research use is permitted.
 
-# Build the PDF manual
-$ make -C docs/ manual
+Citation
 
-Requires: Python 3.11, CUDA‑capable GPU for QuTiP‑GPU, LaTeX tool‑chain for docs.
+If you use this project in academic work, please cite via the accompanying CITATION.cff or DOI badge above:
 
-## Repository layout
-
-.
-├── src/              # Liouvillian analytics, Stim wrappers, Q‑CAT optimiser
-├── notebooks/        # Jupyter demos and figures for the paper
-├── tests/            # PyTest unit tests (CI gate)
-├── docs/             # Sphinx site + Waveguide manual (LaTeX)
-├── data/             # ↧ Git LFS (raw & processed spectra, noise libraries)
-├── hardware/         # GDS masks, COMSOL models, S‑parameter sweeps
-└── .github/workflows # CI: lint → test → build docs → publish artefacts
-
-## Cite this work
-
-Please cite both the arXiv preprint and this repository snapshot:
-
-@article{kim2025waveguide,
-  title       = {Waveguide 3.0: Topological Seismic Cloaking for Qubits},
-  author      = {Kim, Eric and et al.},
-  journal     = {arXiv preprint arXiv:2506.01234},
-  year        = {2025}
+@software{waveguide3.0,
+  author       = {Kim, Eric},
+  title        = {Waveguide 3.0 – Cypress-Mini},
+  year         = {2025},
+  publisher    = {Zenodo},
+  version      = {v0.1-sim},
+  doi          = {<DOI_LINK>}
 }
+Acknowledgements
+Waveguide 3.0 draws inspiration from seismic metamaterials, Kerr-cat QEC, and the autonomous-dissipation framework pioneered by Shruti Puri, Zaki Leghtas, and collaborators. We thank the open-source quantum community for Stim, PyMatching, and QuTiP-GPU.
 
-A CITATION.cff file at the repo root lets GitHub issue a DOI via Zenodo for exact‑version referencing.
 
-## Contributing
-
-Open to pull requests that improve simulation fidelity, extend Q‑CAT, or add electromechanical co‑design for the dual‑gap shell. Please open an issue first to discuss scope.
-
-## License
-
-© 2025 Eric Kim. Code released under the MIT License. Hardware mask files licensed for non‑commercial research; contact the maintainer for terms.
-
-## Contact
-
-Lead maintainer: Eric Kim  ·  Seoul, South Korea  ·  eric.kim@example.com
-
-For mentorship, collaboration, or fabrication inquiries, open an issue or email directly.
-
+Replace the placeholder fields—`<USER>`, `<ZENODO_BADGE_ID>`, and `<DOI_LINK>`—with your GitHub username and Zenodo details once available, then drop this file into the repo root. GitHub will render badges and links automatically.
