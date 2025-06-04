@@ -1,20 +1,27 @@
+#!/usr/bin/env python
 """Run a grid sweep over ring count and cat-pump strength.
 
-This script simulates a rotated surface code patch using Stim and decodes
-with PyMatching. The bias from concentric rings is modelled by varying the
-measurement error probability based on the cat-pump parameter.
-Results are saved to ``results/epsilon_log.csv`` and ``results/grid_sweep.png``.
+The script simulates a distance-3 rotated surface-code patch in ``Stim`` and
+decodes each sample with ``PyMatching``.  A concentric-ring bias is modelled
+using a depolarising error rate ``p_phys`` together with a biased bit-flip
+channel.  The bias factor is defined as ``beta = kappa2 / 50e3`` (where
+``kappa2`` is given in Hz).  Measurement bit-flip errors are applied with
+probability ``p_phys / beta``.  Results from a parameter sweep are written to
+``results/epsilon_log.csv`` and an accompanying scatter plot is saved to
+``results/grid_sweep.png``.
 
 Example
 -------
-    python scripts/run_grid_sweep.py --shots 1e4
+Run with default settings::
+
+    python scripts/run_grid_sweep.py --shots 10000 --show-plot
 """
 
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,30 +30,31 @@ import pymatching as pm
 import stim
 
 
-def logical_error_rate(distance: int, kappa2: float, shots: int, p_phys: float = 1e-3) -> float:
-    """Return the logical error rate for a single surface-code instance.
+def logical_error_rate(N_r: int, kappa2_hz: float, shots: int, p_phys: float = 1e-3) -> float:
+    """Estimate the logical error rate for a biased surface-code instance.
 
     Parameters
     ----------
-    distance
-        Code distance (also treated as the number of concentric rings).
-    kappa2
-        Cat-pump parameter in Hz used to bias measurement errors.
+    N_r
+        Number of concentric rings (used as the number of memory rounds).
+    kappa2_hz
+        Cat-pump strength in Hz controlling the bias factor ``beta``.
     shots
-        Number of samples to draw from the noisy circuit.
+        Number of Monte-Carlo samples to draw from the circuit.
     p_phys
-        Physical depolarising error rate applied to each Clifford gate.
+        Physical depolarising error probability applied to Clifford gates.
 
     Returns
     -------
     float
-        Fraction of shots resulting in a logical error.
+        Fraction of shots resulting in a logical failure.
     """
-    meas_flip = p_phys * 1e5 / kappa2
+    beta = kappa2_hz / 50_000.0
+    meas_flip = p_phys / beta
     circuit = stim.Circuit.generated(
         "surface_code:rotated_memory_x",
-        distance=distance,
-        rounds=distance,
+        distance=3,
+        rounds=N_r,
         after_clifford_depolarization=p_phys,
         before_measure_flip_probability=meas_flip,
     )
@@ -59,42 +67,74 @@ def logical_error_rate(distance: int, kappa2: float, shots: int, p_phys: float =
     return failures / shots
 
 
-def run_sweep(N_r_values: Iterable[int], kappa2_values: Iterable[float], shots: int) -> pd.DataFrame:
-    """Run the grid sweep and return the aggregated results."""
+def run_sweep(N_r_values: Sequence[int], kappa2_kHz: Sequence[float], shots: int) -> pd.DataFrame:
+    """Evaluate the logical error rate over the parameter grid.
+
+    Parameters
+    ----------
+    N_r_values
+        Iterable of ring-count values.
+    kappa2_kHz
+        Iterable of cat-pump strengths in kilohertz.
+    shots
+        Number of circuit samples per grid point.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Table containing ``N_r``, ``kappa2_kHz`` and ``eps_log`` columns.
+    """
     records = []
     for N_r in N_r_values:
-        for k2 in kappa2_values:
-            eps_log = logical_error_rate(N_r, k2, shots)
-            records.append({"N_r": N_r, "kappa2_kHz": k2 / 1e3, "eps_log": eps_log})
-    df = pd.DataFrame(records)
-    return df
+        for k2 in kappa2_kHz:
+            eps_log = logical_error_rate(N_r, k2 * 1e3, shots)
+            records.append({"N_r": N_r, "kappa2_kHz": k2, "eps_log": eps_log})
+    return pd.DataFrame.from_records(records)
 
 
-def main(argv: Iterable[str] | None = None) -> None:
+def main(argv: Sequence[str] | None = None) -> None:
+    """Entry point for the grid sweep CLI."""
     parser = argparse.ArgumentParser(description="Run concentric-ring grid sweep")
-    parser.add_argument("--shots", type=float, default=1e4, help="Number of circuit shots")
+    parser.add_argument(
+        "--shots",
+        type=int,
+        default=int(1e4),
+        help="Number of circuit shots per grid point",
+    )
+    parser.add_argument(
+        "--show-plot",
+        action="store_true",
+        help="Display the result plot after running the sweep",
+    )
     args = parser.parse_args(argv)
-    shots = int(args.shots)
+
+    if args.shots <= 0:
+        raise SystemExit(1)
 
     N_r_values = [3, 5, 7]
-    kappa2_values = [50e3, 150e3, 300e3]
+    kappa2_values = [50.0, 150.0, 300.0]
 
-    df = run_sweep(N_r_values, kappa2_values, shots)
+    df = run_sweep(N_r_values, kappa2_values, args.shots)
 
     results_dir = Path("results")
     results_dir.mkdir(exist_ok=True)
     csv_path = results_dir / "epsilon_log.csv"
     df.to_csv(csv_path, index=False)
 
-    plt.figure()
+    fig, ax = plt.subplots()
     for N_r in N_r_values:
         sub = df[df["N_r"] == N_r]
-        plt.scatter(sub["kappa2_kHz"], sub["eps_log"], label=f"N_r={N_r}")
-    plt.xlabel("kappa2 (kHz)")
-    plt.ylabel("Logical error rate")
-    plt.legend()
-    plt.savefig(results_dir / "grid_sweep.png")
+        ax.scatter(sub["kappa2_kHz"], sub["eps_log"], label=f"N_r={N_r}")
+    ax.set_xlabel("kappa2 (kHz)")
+    ax.set_ylabel("eps_log")
+    ax.set_title("Logical error rate sweep")
+    ax.legend()
+    fig.savefig(results_dir / "grid_sweep.png")
+    if args.show_plot:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
-if __name__ == "__main__":  # pragma: no cover - CLI entry point
+if __name__ == "__main__":
     main()
