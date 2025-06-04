@@ -21,26 +21,6 @@
 
 ---
 
-## Repository Layout
-
-waveguide3.0/
-├── src/ # Python packages (analytics, Stim, QuTiP, Q-CAT)
-│ └── init.py
-├── notebooks/ # Jupyter demos (reproduce figures with one click)
-├── tests/ # Pytest unit tests (CI-gated)
-├── docs/ # Sphinx site + LaTeX manual (auto-built)
-│ ├── conf.py
-│ └── Waveguide_manual.tex
-├── data/ # Git-LFS tracked raw & processed datasets
-│ ├── raw/
-│ └── processed/
-├── hardware/ # GDS, COMSOL, S-parameter files (place-holders)
-├── .github/workflows/ # CI: lint → pytest → build manual → publish docs
-├── environment.yml # Conda environment spec
-├── AGENTS.md # Copilot/Codex agent instructions
-├── CITATION.cff # Citation metadata (exported to Zenodo DOI)
-├── LICENSE # MIT License
-└── README.md
 
 
 ---
